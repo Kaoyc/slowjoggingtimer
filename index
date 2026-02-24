@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>跑步節拍器與計時器 (科幻HUD)</title>
+    <style>
+        /* 定義科幻主題變數 */
+        :root {
+            --bg-color: #e0f2fe;
+            --container-bg: rgba(240, 248, 255, 0.9);
+            --container-border: #0ea5e9;
+            --text-main: #0c4a6e;
+            --text-heading: #0284c7;
+            --foot-text: rgba(0, 0, 0, 0.05);
+            --primary: #0ea5e9;
+            --shadow-color: rgba(14, 165, 233, 0.2);
+            --glow: rgba(14, 165, 233, 0.4);
+            --danger: #ef4444;
+        }
+
+        /* 深色科幻模式 (預設) */
+        body.dark-mode {
+            --bg-color: #030b14;
+            --container-bg: rgba(2, 18, 28, 0.85);
+            --container-border: #005577;
+            --text-main: #88ccff;
+            --text-heading: #00e5ff;
+            --foot-text: rgba(0, 229, 255, 0.03);
+            --primary: #00e5ff;
+            --shadow-color: rgba(0, 229, 255, 0.15);
+            --glow: rgba(0, 229, 255, 0.6);
+            --danger: #ff0055;
+        }
+
+        body {
+            font-family: 'Courier New', Courier, monospace, 'Segoe UI', sans-serif;
+            background-color: var(--bg-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            color: var(--text-main);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* 科技網格背景 */
+        body.dark-mode {
+            background-image:
+                linear-gradient(rgba(0, 229, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 229, 255, 0.05) 1px, transparent 1px);
+            background-size: 30px 30px;
+            background-position: center center;
+        }
+        body:not(.dark-mode) {
+            background-image:
+                linear-gradient(rgba(14, 165, 233, 0.08) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(14, 165, 233, 0.08) 1px, transparent 1px);
+            background-size: 30px 30px;
+            background-position: center center;
+        }
+
+        /* 主面板 */
+        .container {
+            background-color: var(--container-bg);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid var(--container-border);
+            padding: 30px 20px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.5), inset 0 0 20px var(--shadow-color);
+            text-align: center;
+            width: 90%;
+            max-width: 400px;
+            position: relative; 
+            z-index: 10; 
+            transition: all 0.3s ease;
+        }
+
+        /* 科技實體裝甲邊角 */
+        .corner {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-color: var(--primary);
+            border-style: solid;
+            z-index: 20;
+            box-shadow: 0 0 10px var(--glow);
+        }
+        .corner-tl { top: -2px; left: -2px; border-width: 3px 0 0 3px; }
+        .corner-tr { top: -2px; right: -2px; border-width: 3px 3px 0 0; }
+        .corner-bl { bottom: -2px; left: -2px; border-width: 0 0 3px 3px; }
+        .corner-br { bottom: -2px; right: -2px; border-width: 0 3px 3px 0; }
+
+        .theme-toggle {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: transparent;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            color: var(--primary);
+            transition: transform 0.2s;
+            z-index: 30;
+        }
+        .theme-toggle:hover {
+            transform: scale(1.1);
+            text-shadow: 0 0 10px var(--glow);
+        }
+
+        /* 標題裝飾 */
+        h1 {
+            margin-top: 0;
+            color: var(--text-heading);
+            font-size: 22px;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px var(--glow);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+        h1 .deco {
+            font-size: 16px;
+            color: var(--container-border);
+        }
+
+        /* 雷達同心圓設計 */
+        .hud-circle {
+            position: relative;
+            width: 170px;
+            height: 170px;
+            border-radius: 50%;
+            border: 2px solid rgba(0, 229, 255, 0.2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 25px auto;
+            background: radial-gradient(circle, rgba(0,229,255,0.05) 0%, transparent 70%);
+            box-shadow: 0 0 15px var(--shadow-color), inset 0 0 20px var(--shadow-color);
+        }
+        .hud-circle::before {
+            content: '';
+            position: absolute;
+            top: 8px; left: 8px; right: 8px; bottom: 8px;
+            border-radius: 50%;
+            border: 2px dashed var(--primary);
+            opacity: 0.7;
+            animation: spin 20s linear infinite;
+        }
+        .hud-circle::after {
+            content: '';
+            position: absolute;
+            top: -6px; left: -6px; right: -6px; bottom: -6px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            border-top-color: var(--primary);
+            border-bottom-color: var(--primary);
+            animation: spin-reverse 15s linear infinite;
+        }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes spin-reverse { 100% { transform: rotate(-360deg); } }
+
+        .bpm-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+        }
+        .bpm-display {
+            font-size: 58px;
+            font-weight: bold;
+            color: var(--primary);
+            line-height: 1;
+            text-shadow: 0 0 15px var(--glow);
+            margin-bottom: 5px;
+        }
+        .bpm-label {
+            font-size: 14px;
+            color: var(--text-main);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+
+        /* 計時器裝飾 */
+        .timer-display {
+            font-size: 28px;
+            font-weight: bold;
+            color: var(--text-heading);
+            font-variant-numeric: tabular-nums;
+            text-shadow: 0 0 10px var(--glow);
+            background: rgba(0, 229, 255, 0.05);
+            border: 1px solid var(--container-border);
+            padding: 5px 25px;
+            display: inline-block;
+            margin-top: -10px;
+            margin-bottom: 20px;
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+        }
+
+        /* 全螢幕背景閃爍 */
+        .split-flasher {
+            position: fixed;
+            top: 0;
+            left: 0;
+            display: flex;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0; 
+        }
+        .flasher-half {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 30vw; 
+            font-weight: bold;
+            color: var(--foot-text);
+            background-color: transparent;
+            transition: background-color 0.05s, color 0.05s, opacity 0.05s;
+            user-select: none; 
+            opacity: 0.1; 
+        }
+        body.dark-mode .flasher-half {
+            opacity: 0.15;
+        }
+        .flasher-half.active-left, .flasher-half.active-right {
+            background-color: var(--primary);
+            color: transparent;
+            opacity: 0.25; 
+            box-shadow: inset 0 0 150px var(--primary);
+        }
+
+        /* 音量與滑桿 */
+        .volume-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            color: var(--primary);
+        }
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+            height: 20px;
+            margin: 15px 0;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 2px;
+            background: var(--container-border);
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 8px;
+            background: var(--primary);
+            margin-top: -7px;
+            box-shadow: 0 0 10px var(--glow);
+            cursor: pointer;
+            border-radius: 1px;
+        }
+
+        /* 全息切角按鈕 */
+        .controls {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        button.tech-btn {
+            background: rgba(0, 229, 255, 0.05);
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: bold;
+            font-family: inherit;
+            letter-spacing: 2px;
+            transition: all 0.2s;
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+            text-shadow: 0 0 5px var(--glow);
+        }
+        button.tech-btn:hover {
+            background: var(--primary);
+            color: #000;
+            text-shadow: none;
+            box-shadow: 0 0 20px var(--primary);
+        }
+        button.tech-btn.danger {
+            border-color: var(--danger);
+            color: var(--danger);
+            text-shadow: 0 0 5px rgba(255,0,85,0.5);
+        }
+        button.tech-btn.danger:hover {
+            background: var(--danger);
+            color: #fff;
+            box-shadow: 0 0 20px var(--danger);
+            text-shadow: none;
+        }
+
+        /* 整合後的 BPM 控制區塊 */
+        .bpm-control-group {
+            margin: 15px 0 25px 0;
+            padding: 15px;
+            background: rgba(0, 229, 255, 0.02);
+            border: 1px solid rgba(0, 229, 255, 0.15);
+            border-radius: 12px;
+            box-shadow: inset 0 0 10px rgba(0, 229, 255, 0.05);
+        }
+        .bpm-control-group input[type=range] {
+            margin: 5px 0 25px 0;
+            position: relative;
+            z-index: 2;
+        }
+
+        .quick-buttons {
+            position: relative;
+            width: 100%;
+            height: 28px;
+        }
+        .quick-btn {
+            position: absolute;
+            top: 0;
+            transform: translateX(-50%);
+            background: rgba(0, 229, 255, 0.05);
+            color: var(--text-main);
+            padding: 4px 6px;
+            font-size: 13px;
+            border: 1px solid var(--container-border);
+            cursor: pointer;
+            transition: all 0.2s;
+            clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px);
+            font-family: inherit;
+        }
+        /* 連接滑桿的 HUD 刻度線 */
+        .quick-btn::before {
+            content: '';
+            position: absolute;
+            top: -18px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 1px;
+            height: 15px;
+            background: var(--container-border);
+            opacity: 0.6;
+            transition: all 0.2s;
+        }
+        .quick-btn:hover { 
+            background: rgba(0, 229, 255, 0.2); 
+            color: var(--primary);
+            border-color: var(--primary);
+            box-shadow: 0 0 10px var(--glow);
+        }
+        .quick-btn:hover::before {
+            background: var(--primary);
+            opacity: 1;
+            box-shadow: 0 0 8px var(--glow);
+        }
+    </style>
+</head>
+<body class="dark-mode">
+
+<div class="split-flasher">
+    <div class="flasher-half" id="leftFlash">左</div>
+    <div class="flasher-half" id="rightFlash">右</div>
+</div>
+
+<div class="container">
+    <!-- 裝甲角標 -->
+    <div class="corner corner-tl"></div>
+    <div class="corner corner-tr"></div>
+    <div class="corner corner-bl"></div>
+    <div class="corner corner-br"></div>
+
+    <button class="theme-toggle" id="themeBtn" onclick="toggleTheme()" title="切換主題">☀️</button>
+    
+    <h1><span class="deco">≡</span> 跑步節拍器 <span class="deco">≡</span></h1>
+    
+    <div class="hud-circle">
+        <div class="bpm-wrapper">
+            <div class="bpm-display" id="bpmValue">150</div>
+            <div class="bpm-label">BPM</div>
+        </div>
+    </div>
+
+    <div class="timer-display" id="timerValue">00:00</div>
+    
+    <div class="bpm-control-group">
+        <input type="range" id="bpmSlider" min="60" max="240" value="150" oninput="updateBpm(this.value)">
+        <div class="quick-buttons">
+            <!-- 根據 60 ~ 240 的區間精準計算百分比位置 -->
+            <button class="quick-btn" style="left: 16.66%;" onclick="updateBpm(90)">90</button>
+            <button class="quick-btn" style="left: 33.33%;" onclick="updateBpm(120)">120</button>
+            <button class="quick-btn" style="left: 50%;" onclick="updateBpm(150)">150</button>
+            <button class="quick-btn" style="left: 66.66%;" onclick="updateBpm(180)">180</button>
+            <button class="quick-btn" style="left: 83.33%;" onclick="updateBpm(210)">210</button>
+        </div>
+    </div>
+    
+    <div class="volume-control">
+        <span style="font-size: 14px;">VOL</span>
+        <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="0.5" oninput="updateVolume(this.value)">
+    </div>
+
+    <div class="controls">
+        <button class="tech-btn" id="playBtn" onclick="togglePlay()">啟動</button>
+        <button class="tech-btn" id="muteBtn" onclick="toggleMute()">音效: ON</button>
+        <button class="tech-btn danger" onclick="resetTimer()">重置</button>
+    </div>
+</div>
+
+<script>
+    // --- 主題切換邏輯 ---
+    // 預設為 true (因為 html 中已掛上 dark-mode class)
+    let isDarkMode = true;
+    function toggleTheme() {
+        isDarkMode = !isDarkMode;
+        const body = document.body;
+        const themeBtn = document.getElementById('themeBtn');
+        
+        if (isDarkMode) {
+            body.classList.add('dark-mode');
+            themeBtn.innerText = '☀️';
+            themeBtn.title = "切換淺色模式";
+        } else {
+            body.classList.remove('dark-mode');
+            themeBtn.innerText = '🌙';
+            themeBtn.title = "切換深色模式";
+        }
+    }
+
+    // --- 節拍器與計時器變數 ---
+    let bpm = 150;
+    let volume = 0.5;
+    let isPlaying = false;
+    let isMuted = false;
+    let isLeftFoot = true;
+    let metronomeTimerId = null;
+    let audioContext = null;
+
+    let secondsElapsed = 0;
+    let stopwatchIntervalId = null;
+
+    const bpmValueEl = document.getElementById('bpmValue');
+    const bpmSliderEl = document.getElementById('bpmSlider');
+    const volumeSliderEl = document.getElementById('volumeSlider');
+    const timerValueEl = document.getElementById('timerValue');
+    const leftFlashEl = document.getElementById('leftFlash');
+    const rightFlashEl = document.getElementById('rightFlash');
+    const playBtn = document.getElementById('playBtn');
+    const muteBtn = document.getElementById('muteBtn');
+
+    // --- 音效邏輯 ---
+    function initAudio() {
+        if (!audioContext) {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+    }
+
+    function playClick() {
+        if (isMuted || !audioContext || volume === 0) return;
+        
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(isLeftFoot ? 800 : 1000, audioContext.currentTime);
+        
+        gainNode.gain.setValueAtTime(volume, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.1);
+        
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.1);
+    }
+
+    // --- 節拍執行邏輯 ---
+    function tick() {
+        playClick();
+        
+        if (isLeftFoot) {
+            leftFlashEl.classList.add('active-left');
+            rightFlashEl.classList.remove('active-right');
+        } else {
+            rightFlashEl.classList.add('active-right');
+            leftFlashEl.classList.remove('active-left');
+        }
+        
+        isLeftFoot = !isLeftFoot;
+    }
+
+    function startMetronome() {
+        if (metronomeTimerId) clearInterval(metronomeTimerId);
+        const interval = 60000 / bpm;
+        metronomeTimerId = setInterval(tick, interval);
+        tick(); 
+    }
+
+    function stopMetronome() {
+        clearInterval(metronomeTimerId);
+        metronomeTimerId = null;
+        leftFlashEl.classList.remove('active-left');
+        rightFlashEl.classList.remove('active-right');
+        isLeftFoot = true; 
+    }
+
+    // --- 音量邏輯 ---
+    function updateVolume(newVolume) {
+        volume = parseFloat(newVolume);
+    }
+
+    // --- 計時器邏輯 ---
+    function updateTimerDisplay() {
+        const minutes = Math.floor(secondsElapsed / 60).toString().padStart(2, '0');
+        const seconds = (secondsElapsed % 60).toString().padStart(2, '0');
+        timerValueEl.innerText = `${minutes}:${seconds}`;
+    }
+
+    function startTimer() {
+        if (!stopwatchIntervalId) {
+            stopwatchIntervalId = setInterval(() => {
+                secondsElapsed++;
+                updateTimerDisplay();
+            }, 1000);
+        }
+    }
+
+    function stopTimer() {
+        if (stopwatchIntervalId) {
+            clearInterval(stopwatchIntervalId);
+            stopwatchIntervalId = null;
+        }
+    }
+
+    function resetTimer() {
+        secondsElapsed = 0;
+        updateTimerDisplay();
+    }
+
+    // --- 整合控制邏輯 ---
+    function togglePlay() {
+        initAudio(); 
+        isPlaying = !isPlaying;
+        
+        if (isPlaying) {
+            if (audioContext && audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+            playBtn.innerText = '終止';
+            playBtn.style.backgroundColor = 'var(--primary)'; 
+            playBtn.style.color = '#000';
+            playBtn.style.textShadow = 'none';
+            playBtn.style.boxShadow = '0 0 15px var(--primary)';
+            startMetronome();
+            startTimer();
+        } else {
+            playBtn.innerText = '啟動';
+            playBtn.style.backgroundColor = 'rgba(0, 229, 255, 0.05)';
+            playBtn.style.color = 'var(--primary)';
+            playBtn.style.textShadow = '0 0 5px var(--glow)';
+            playBtn.style.boxShadow = 'none';
+            stopMetronome();
+            stopTimer();
+        }
+    }
+
+    function toggleMute() {
+        isMuted = !isMuted;
+        if (isMuted) {
+            muteBtn.innerText = '音效: OFF';
+            muteBtn.style.borderColor = 'var(--danger)';
+            muteBtn.style.color = 'var(--danger)';
+            muteBtn.style.textShadow = '0 0 5px rgba(255,0,85,0.5)';
+        } else {
+            muteBtn.innerText = '音效: ON';
+            muteBtn.style.borderColor = 'var(--primary)';
+            muteBtn.style.color = 'var(--primary)';
+            muteBtn.style.textShadow = '0 0 5px var(--glow)';
+        }
+    }
+
+    function updateBpm(newBpm) {
+        bpm = parseInt(newBpm);
+        bpmValueEl.innerText = bpm;
+        bpmSliderEl.value = bpm;
+        
+        if (isPlaying) {
+            startMetronome(); 
+        }
+    }
+</script>
+
+</body>
+</html>
