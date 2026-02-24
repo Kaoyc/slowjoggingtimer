@@ -385,7 +385,7 @@
     
     <div class="hud-circle">
         <div class="bpm-wrapper">
-            <div class="bpm-display" id="bpmValue">150</div>
+            <div class="bpm-display" id="bpmValue">180</div>
             <div class="bpm-label">BPM</div>
         </div>
     </div>
@@ -393,14 +393,12 @@
     <div class="timer-display" id="timerValue">00:00</div>
     
     <div class="bpm-control-group">
-        <input type="range" id="bpmSlider" min="60" max="240" value="150" oninput="updateBpm(this.value)">
+        <input type="range" id="bpmSlider" min="120" max="240" value="180" oninput="updateBpm(this.value)">
         <div class="quick-buttons">
-            <!-- 根據 60 ~ 240 的區間精準計算百分比位置 -->
-            <button class="quick-btn" style="left: 16.66%;" onclick="updateBpm(90)">90</button>
-            <button class="quick-btn" style="left: 33.33%;" onclick="updateBpm(120)">120</button>
-            <button class="quick-btn" style="left: 50%;" onclick="updateBpm(150)">150</button>
-            <button class="quick-btn" style="left: 66.66%;" onclick="updateBpm(180)">180</button>
-            <button class="quick-btn" style="left: 83.33%;" onclick="updateBpm(210)">210</button>
+            <!-- 根據 120 ~ 240 的區間精準計算百分比位置 -->
+            <button class="quick-btn" style="left: 25%;" onclick="updateBpm(150)">150</button>
+            <button class="quick-btn" style="left: 50%;" onclick="updateBpm(180)">180</button>
+            <button class="quick-btn" style="left: 75%;" onclick="updateBpm(210)">210</button>
         </div>
     </div>
     
@@ -437,7 +435,7 @@
     }
 
     // --- 節拍器與計時器變數 ---
-    let bpm = 150;
+    let bpm = 180;
     let volume = 0.5;
     let isPlaying = false;
     let isMuted = false;
