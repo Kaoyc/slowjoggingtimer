@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>跑步節拍器計時器</title>
+    <title>跑步節拍計時器 </title>
     <style>
         /* 定義科幻主題變數 */
         :root {
@@ -147,7 +147,7 @@
             border-radius: 50%;
             border: 2px dashed var(--primary);
             opacity: 0.7;
-            animation: spin 20s linear infinite;
+            animation: spin 10s linear infinite;
         }
         .hud-circle::after {
             content: '';
@@ -157,7 +157,7 @@
             border: 2px solid transparent;
             border-top-color: var(--primary);
             border-bottom-color: var(--primary);
-            animation: spin-reverse 15s linear infinite;
+            animation: spin-reverse 10s linear infinite;
         }
 
         @keyframes spin { 100% { transform: rotate(360deg); } }
@@ -241,6 +241,16 @@
             gap: 10px;
             margin-bottom: 20px;
             color: var(--primary);
+            width: 100%;
+        }
+        .vol-label {
+            font-size: 14px;
+            width: 30px;
+            text-align: left;
+            font-weight: bold;
+        }
+        .vol-spacer {
+            width: 30px; /* 右側隱形佔位，確保滑桿絕對置中 */
         }
         input[type=range] {
             -webkit-appearance: none;
@@ -268,16 +278,17 @@
         /* 全息切角按鈕 */
         .controls {
             display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 12px;
+            justify-content: space-between;
+            width: 100%;
+            gap: 10px;
             margin-bottom: 20px;
         }
         button.tech-btn {
+            flex: 1;
             background: rgba(0, 229, 255, 0.05);
             border: 1px solid var(--primary);
             color: var(--primary);
-            padding: 10px 20px;
+            padding: 10px 0;
             font-size: 16px;
             cursor: pointer;
             font-weight: bold;
@@ -403,13 +414,15 @@
     </div>
     
     <div class="volume-control">
-        <span style="font-size: 14px;">VOL</span>
-        <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="0.5" oninput="updateVolume(this.value)">
+        <span class="vol-label">VOL</span>
+        <!-- 將 max 設為 2 (200%)，預設 value 設為 1 (100%) -->
+        <input type="range" id="volumeSlider" min="0" max="2" step="0.01" value="1" oninput="updateVolume(this.value)">
+        <span class="vol-spacer"></span>
     </div>
 
     <div class="controls">
         <button class="tech-btn" id="playBtn" onclick="togglePlay()">啟動</button>
-        <button class="tech-btn" id="muteBtn" onclick="toggleMute()">音效: ON</button>
+        <button class="tech-btn" id="muteBtn" onclick="toggleMute()">音效</button>
         <button class="tech-btn danger" onclick="resetTimer()">重置</button>
     </div>
 </div>
@@ -436,7 +449,7 @@
 
     // --- 節拍器與計時器變數 ---
     let bpm = 180;
-    let volume = 0.5;
+    let volume = 1; // 預設 100% 正常音量
     let isPlaying = false;
     let isMuted = false;
     let isLeftFoot = true;
@@ -574,12 +587,10 @@
     function toggleMute() {
         isMuted = !isMuted;
         if (isMuted) {
-            muteBtn.innerText = '音效: OFF';
             muteBtn.style.borderColor = 'var(--danger)';
             muteBtn.style.color = 'var(--danger)';
             muteBtn.style.textShadow = '0 0 5px rgba(255,0,85,0.5)';
         } else {
-            muteBtn.innerText = '音效: ON';
             muteBtn.style.borderColor = 'var(--primary)';
             muteBtn.style.color = 'var(--primary)';
             muteBtn.style.textShadow = '0 0 5px var(--glow)';
